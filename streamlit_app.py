@@ -62,7 +62,7 @@ def save_cache(df: pd.DataFrame, last_month: str, months: list):
             "months": months,
             "updated_at": datetime.now().isoformat(),
         }
-        sb.table("analysis_cache").upsert({"id": 1, "data": json.dumps(payload, ensure_ascii=False)}).execute()
+        sb.table("amazon_profit_cache").upsert({"id": 1, "data": json.dumps(payload, ensure_ascii=False)}).execute()
     except Exception as e:
         st.warning(f"Could not save results to database: {e}")
 
@@ -70,7 +70,7 @@ def save_cache(df: pd.DataFrame, last_month: str, months: list):
 def load_cache():
     try:
         sb = get_supabase()
-        resp = sb.table("analysis_cache").select("*").eq("id", 1).execute()
+        resp = sb.table("amazon_profit_cache").select("*").eq("id", 1).execute()
         if resp.data:
             return json.loads(resp.data[0]["data"])
     except Exception:
