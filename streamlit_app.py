@@ -218,12 +218,16 @@ def render_results(df: pd.DataFrame, last_month: str, months: list, updated_at: 
     st.caption(f"Showing **{len(df_show)}** products — click column headers to sort")
 
     month_cols = months
+    df_show = df_show.copy()
+    df_show.insert(1, 'Trend', df_show[month_cols].values.tolist())
+
     st.dataframe(
         df_show,
         use_container_width=True,
         height=600,
         column_config={
             'Product Name': st.column_config.TextColumn('Product Name', width='large'),
+            'Trend':        st.column_config.BarChartColumn('Trend', width='small', y_min=None, y_max=None),
             'Brand':        st.column_config.TextColumn('Brand', width='medium'),
             'ASINs':        st.column_config.TextColumn('ASINs', width='medium'),
             'Peak Profit ($)': st.column_config.NumberColumn('Peak Profit ($)', format='$%.0f'),
