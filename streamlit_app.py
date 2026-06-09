@@ -169,14 +169,14 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         mp = {r['月份']: round(r['profit'], 2) for _, r in sub.iterrows()}
         results.append({
             'Product Name': sub['产品组名称'].iloc[0],
+            'Decline ($)': round(best_p - last_p, 2),
+            'Decline (%)': round(dpct, 1),
             'Brand': sub['brand'].iloc[0],
             'ASINs': sub[sub['月份']==last_month]['asins'].iloc[0] if len(last_row) else sub['asins'].iloc[0],
             'Peak Profit ($)': round(best_p, 2),
             'Peak Month': best_m,
             **{m: round(mp.get(m, 0), 2) for m in complete},
             'Last Month Profit ($)': round(last_p, 2),
-            'Decline ($)': round(best_p - last_p, 2),
-            'Decline (%)': round(dpct, 1),
         })
     results.sort(key=lambda x: x['Decline ($)'], reverse=True)
     return pd.DataFrame(results), last_month, complete, None
