@@ -73,8 +73,8 @@ def load_cache():
         resp = sb.table("amazon_profit_cache").select("*").eq("id", 1).execute()
         if resp.data:
             return json.loads(resp.data[0]["data"])
-    except Exception:
-        pass
+    except Exception as e:
+        st.warning(f"Could not load saved results from database: {e}")
     return None
 
 
