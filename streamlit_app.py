@@ -119,8 +119,13 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
     df['月份'] = df['日期'].apply(exm)
     df = df.dropna(subset=['月份'])
 
+    def best_val(s):
+        """取第一个非空、非'-'的值，否则取 first。"""
+        valid = s[s.notna() & (s.astype(str).str.strip() != '-') & (s.astype(str).str.strip() != '')]
+        return valid.iloc[0] if len(valid) else s.iloc[0]
+
     asin_info = df.groupby('ASIN').agg(
-        产品名称=('产品名称','first'), 品牌=('品牌','first')
+        产品名称=('产品名称', best_val), 品牌=('品牌', best_val)
     ).reset_index()
     asin_info['bc'] = asin_info['品牌'].apply(clean_brand)
 
