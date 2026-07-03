@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import json
 import re
+import time
+import requests
 from datetime import datetime
 from difflib import SequenceMatcher
 
@@ -104,6 +106,34 @@ def clean_brand(b):
 def similarity(a, b, brand=''):
     return SequenceMatcher(None, clean_name(a, brand), clean_name(b, brand)).ratio()
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_amazon_title(asin: str) -> str:
+    """从 Amazon 产品页抓取标题，结果缓存 24 小时。"""
+    try:
+        url = f"https://www.amazon.com/dp/{asin}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        resp = requests.get(url, headers=headers, timeout=8)
+        if resp.status_code == 200:
+            # 优先找 <span id="productTitle">
+            m = re.search(r'id="productTitle"[^>]*>\s*([^<]{5,300}?)\s*<', resp.text)
+            if m:
+                return m.group(1).strip()
+            # 备用：<title> 标签
+            m = re.search(r'<title>([^<]+)</title>', resp.text)
+            if m:
+                title = m.group(1).strip()
+                title = re.sub(r'\s*[:\-–]\s*(Amazon\.com|Amazon).*$', '', title)
+                return title.strip()
+    except Exception:
+        pass
+    return ''
+
 @st.cache_data(show_spinner=False)
 def run_analysis(file_bytes, filename, threshold, decline_ratio):
     import io
@@ -135,22 +165,42 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             parent[x] = parent[parent[x]]; x = parent[x]
         return x
     rows = asin_info.to_dict('records')
+    # 如果两个名称在这些关键词上不同，绝对不合并（白天/夜间/颜色变体等）
+    EXCLUSIVE_KEYWORDS = [
+        {'day', 'daytime'}, {'night', 'nighttime'},
+        {'men', 'women'}, {'male', 'female'},
+        {'kids', 'adult', 'adults'},
+    ]
+    def has_conflict(na, nb):
+        wa = set(re.findall(r'\b\w+\b', na.lower()))
+        wb = set(re.findall(r'\b\w+\b', nb.lower()))
+        for group in EXCLUSIVE_KEYWORDS:
+            if (wa & group) != (wb & group):
+                return True
+        return False
+
     for i in range(len(rows)):
         for j in range(i+1, len(rows)):
             bi, bj = rows[i]['bc'], rows[j]['bc']
             if not bi or not bj or bi != bj: continue
             ni, nj = rows[i]['产品名称'], rows[j]['产品名称']
-            # 名称为空或"-"的不参与分组
             if not isinstance(ni, str) or ni.strip() in ('-', ''): continue
             if not isinstance(nj, str) or nj.strip() in ('-', ''): continue
+            if has_conflict(ni, nj): continue
             if similarity(ni, nj, bi) >= 0.82:
                 parent[find(i)] = find(j)
-    glabel, gmap = {}, {}
+
+    # 取同组中出现次数最多的名称作为组名（而非最长名称）
+    from collections import Counter
+    group_names: dict = {}
+    gmap = {}
     for i, row in enumerate(rows):
         root = find(i)
-        if root not in glabel or len(row['产品名称']) > len(glabel[root]):
-            glabel[root] = row['产品名称']
+        name = row['产品名称']
+        if isinstance(name, str) and name.strip() not in ('-', ''):
+            group_names.setdefault(root, Counter())[name] += 1
         gmap[row['ASIN']] = root
+    glabel = {root: cnt.most_common(1)[0][0] for root, cnt in group_names.items()}
     df['产品组ID'] = df['ASIN'].map(gmap)
     df['产品组名称'] = df['产品组ID'].map(glabel)
 
