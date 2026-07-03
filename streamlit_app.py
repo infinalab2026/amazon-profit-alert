@@ -80,7 +80,7 @@ def load_cache():
 
 # ── Analysis logic ─────────────────────────────────────────────────────────────
 
-def clean_name(name):
+def clean_name(name, brand=''):
     if not isinstance(name, str): return ""
     name = re.sub(r'\([^)]*\)', '', name)
     name = re.sub(r'\[[^\]]*\]', '', name)
@@ -90,14 +90,19 @@ def clean_name(name):
               r'\b(new|upgraded|improved|v\d+|version\s*\d+)\b',
               r'[\|\-–—].*$']:
         name = re.sub(p, '', name, flags=re.IGNORECASE)
-    return re.sub(r'\s+', ' ', name).strip().lower()
+    name = re.sub(r'\s+', ' ', name).strip().lower()
+    # 去掉品牌名，避免品牌前缀虚增相似度
+    if brand:
+        brand_clean = re.sub(r'^lr\d+-', '', brand.lower()).strip()
+        name = re.sub(r'^' + re.escape(brand_clean) + r'\s*', '', name).strip()
+    return name
 
 def clean_brand(b):
     if not isinstance(b, str) or b.strip() in ('-', ''): return ''
     return b.split('，')[0].split(',')[0].strip().lower()
 
-def similarity(a, b):
-    return SequenceMatcher(None, clean_name(a), clean_name(b)).ratio()
+def similarity(a, b, brand=''):
+    return SequenceMatcher(None, clean_name(a, brand), clean_name(b, brand)).ratio()
 
 @st.cache_data(show_spinner=False)
 def run_analysis(file_bytes, filename, threshold, decline_ratio):
@@ -129,7 +134,11 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         for j in range(i+1, len(rows)):
             bi, bj = rows[i]['bc'], rows[j]['bc']
             if not bi or not bj or bi != bj: continue
-            if similarity(rows[i]['产品名称'], rows[j]['产品名称']) >= 0.6:
+            ni, nj = rows[i]['产品名称'], rows[j]['产品名称']
+            # 名称为空或"-"的不参与分组
+            if not isinstance(ni, str) or ni.strip() in ('-', ''): continue
+            if not isinstance(nj, str) or nj.strip() in ('-', ''): continue
+            if similarity(ni, nj, bi) >= 0.82:
                 parent[find(i)] = find(j)
     glabel, gmap = {}, {}
     for i, row in enumerate(rows):
