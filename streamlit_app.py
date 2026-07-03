@@ -134,7 +134,6 @@ def fetch_amazon_title(asin: str) -> str:
         pass
     return ''
 
-@st.cache_data(show_spinner=False)
 def run_analysis(file_bytes, filename, threshold, decline_ratio):
     import io
     df = pd.read_excel(io.BytesIO(file_bytes), sheet_name=0, header=None)
@@ -331,6 +330,14 @@ with st.sidebar:
     analyze_btn = st.button("🔍 Analyze", use_container_width=True, type="primary")
     st.divider()
     st.caption("Results are saved automatically and will appear here on your next visit from any device.")
+    if st.button("🗑️ Clear saved results", use_container_width=True):
+        try:
+            get_supabase().table("amazon_profit_cache").delete().eq("id", 1).execute()
+            st.session_state.pop("cached", None)
+            st.success("Cache cleared.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed: {e}")
 
 # Run new analysis
 if analyze_btn and uploaded:
