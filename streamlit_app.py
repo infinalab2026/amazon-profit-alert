@@ -316,9 +316,19 @@ st.title("📊 Amazon Product Profit Decline Alert")
 st.caption(f"Logged in as **{st.session_state.get('username','')}** · "
            f"[Logout](#logout \"Click logout below\")")
 
-if st.button("Logout", key="logout_btn"):
-    st.session_state.authenticated = False
-    st.rerun()
+col_logout, col_clear = st.columns([1, 1])
+with col_logout:
+    if st.button("Logout", key="logout_btn", use_container_width=True):
+        st.session_state.authenticated = False
+        st.rerun()
+with col_clear:
+    if st.button("🗑️ Clear saved results", key="clear_btn", use_container_width=True):
+        try:
+            get_supabase().table("amazon_profit_cache").delete().eq("id", 1).execute()
+            st.session_state.pop("cached", None)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed: {e}")
 
 st.divider()
 
@@ -328,16 +338,7 @@ with st.sidebar:
     threshold   = st.number_input("Min. peak profit ($)", value=200, min_value=0, step=50)
     decline_pct = st.number_input("Decline threshold (%)", value=50, min_value=1, max_value=99, step=5)
     analyze_btn = st.button("🔍 Analyze", use_container_width=True, type="primary")
-    st.divider()
     st.caption("Results are saved automatically and will appear here on your next visit from any device.")
-    if st.button("🗑️ Clear saved results", use_container_width=True):
-        try:
-            get_supabase().table("amazon_profit_cache").delete().eq("id", 1).execute()
-            st.session_state.pop("cached", None)
-            st.success("Cache cleared.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Failed: {e}")
 
 # Run new analysis
 if analyze_btn and uploaded:
