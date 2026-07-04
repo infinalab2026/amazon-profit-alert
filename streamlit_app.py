@@ -55,10 +55,14 @@ def get_supabase():
     return create_client(url, key)
 
 
+CACHE_VERSION = "v10"  # 每次修改分析逻辑时递增，自动失效旧缓存
+
+
 def save_cache(df: pd.DataFrame, last_month: str, months: list):
     try:
         sb = get_supabase()
         payload = {
+            "version": CACHE_VERSION,
             "results": df.to_dict("records"),
             "last_month": last_month,
             "months": months,
@@ -74,7 +78,9 @@ def load_cache():
         sb = get_supabase()
         resp = sb.table("amazon_profit_cache").select("*").eq("id", 1).execute()
         if resp.data:
-            return json.loads(resp.data[0]["data"])
+            payload = json.loads(resp.data[0]["data"])
+            if payload.get("version") == CACHE_VERSION:
+                return payload
     except Exception as e:
         st.warning(f"Could not load saved results from database: {e}")
     return None
