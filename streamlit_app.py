@@ -190,9 +190,9 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             b_is_b = bool(wb & group_b)
             if (a_is_a and b_is_b) or (a_is_b and b_is_a):
                 return True
-        # GLP-1 capsule产品：用akkermansia/berberine区分
+        # GLP-1产品：用akkermansia/berberine/acv区分（acv=keto acv，与capsule不同产品）
         if 'glp' in wa and 'glp' in wb:
-            for ing in ('akkermansia', 'berberine'):
+            for ing in ('akkermansia', 'berberine', 'acv'):
                 if (ing in wa) != (ing in wb):
                     return True
         return False
