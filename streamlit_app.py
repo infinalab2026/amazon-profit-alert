@@ -90,7 +90,8 @@ def clean_name(name, brand=''):
               r'\b(\d+\s*pack|\d+\s*pcs|\d+\s*piece|\d+\s*count)\b',
               r'\b(large|small|medium|xl|xxl|xs|mini|pro|plus|max|lite)\b',
               r'\b(new|upgraded|improved|v\d+|version\s*\d+)\b',
-              r'[\|\-–—].*$']:
+              r'\s+[\|–—]\s+.*$',
+              r'\s+-\s+.*$']:
         name = re.sub(p, '', name, flags=re.IGNORECASE)
     name = re.sub(r'\s+', ' ', name).strip().lower()
     # 去掉品牌名，避免品牌前缀虚增相似度
@@ -179,6 +180,12 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         ({'men', 'male'},     {'women', 'female'}),
         ({'kids', 'children'}, {'adult', 'adults'}),
     ] + [(FORMS[i], FORMS[j]) for i in range(len(FORMS)) for j in range(i+1, len(FORMS))]
+    # 区分性成分词：任何一个产品含有而另一个不含，则视为不同产品
+    DISTINGUISHING_INGREDIENTS = [
+        'akkermansia', 'berberine', 'ashwagandha', 'collagen', 'magnesium',
+        'melatonin', 'biotin', 'turmeric', 'curcumin', 'coq10', 'quercetin',
+        'resveratrol', 'glutathione', 'liposomal',
+    ]
     def has_conflict(na, nb):
         wa = set(re.findall(r'\b\w+\b', na.lower()))
         wb = set(re.findall(r'\b\w+\b', nb.lower()))
@@ -188,6 +195,10 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             b_is_a = bool(wb & group_a)
             b_is_b = bool(wb & group_b)
             if (a_is_a and b_is_b) or (a_is_b and b_is_a):
+                return True
+        # 区分性成分：一个有而另一个没有，不合并
+        for ing in DISTINGUISHING_INGREDIENTS:
+            if (ing in wa) != (ing in wb):
                 return True
         return False
 
