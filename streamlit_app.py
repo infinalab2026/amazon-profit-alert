@@ -164,17 +164,21 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             parent[x] = parent[parent[x]]; x = parent[x]
         return x
     rows = asin_info.to_dict('records')
-    # 如果两个名称在这些关键词上不同，绝对不合并（白天/夜间/颜色变体等）
-    EXCLUSIVE_KEYWORDS = [
-        {'day', 'daytime'}, {'night', 'nighttime'},
-        {'men', 'women'}, {'male', 'female'},
-        {'kids', 'adult', 'adults'},
+    # 对立词组：一个名字含左边的词、另一个含右边的词，则不合并
+    CONFLICT_PAIRS = [
+        ({'day', 'daytime'},        {'night', 'nighttime'}),
+        ({'men', 'male'},           {'women', 'female'}),
+        ({'kids', 'children'},      {'adult', 'adults'}),
     ]
     def has_conflict(na, nb):
         wa = set(re.findall(r'\b\w+\b', na.lower()))
         wb = set(re.findall(r'\b\w+\b', nb.lower()))
-        for group in EXCLUSIVE_KEYWORDS:
-            if (wa & group) != (wb & group):
+        for group_a, group_b in CONFLICT_PAIRS:
+            a_is_a = bool(wa & group_a)
+            a_is_b = bool(wa & group_b)
+            b_is_a = bool(wb & group_a)
+            b_is_b = bool(wb & group_b)
+            if (a_is_a and b_is_b) or (a_is_b and b_is_a):
                 return True
         return False
 
