@@ -92,10 +92,14 @@ def clean_name(name, brand=''):
     if not isinstance(name, str): return ""
     name = re.sub(r'\([^)]*\)', '', name)
     name = re.sub(r'\[[^\]]*\]', '', name)
+    # 标准化复合词，避免空格导致相似度下降
+    name = re.sub(r'\bnight\s+time\b', 'nighttime', name, flags=re.IGNORECASE)
+    name = re.sub(r'\bday\s+time\b', 'daytime', name, flags=re.IGNORECASE)
     for p in [r'\b(black|white|blue|red|green|pink|purple|gray|grey|silver|gold|rose)\b',
               r'\b(\d+\s*pack|\d+\s*pcs|\d+\s*piece|\d+\s*count)\b',
               r'\b(large|small|medium|xl|xxl|xs|mini|pro|plus|max|lite)\b',
               r'\b(new|upgraded|improved|v\d+|version\s*\d+)\b',
+              r'\b(capsule|capsules|gummy|gummies|tablet|tablets|powder|drop|drops|patch|patches|cream|creams|supplement|supplements)\b',
               r'\s+[\|–—]\s+.*$',
               r'\s+-\s+.*$']:
         name = re.sub(p, '', name, flags=re.IGNORECASE)
