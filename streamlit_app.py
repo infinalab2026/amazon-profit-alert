@@ -180,12 +180,6 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         ({'men', 'male'},     {'women', 'female'}),
         ({'kids', 'children'}, {'adult', 'adults'}),
     ] + [(FORMS[i], FORMS[j]) for i in range(len(FORMS)) for j in range(i+1, len(FORMS))]
-    # 区分性成分词：任何一个产品含有而另一个不含，则视为不同产品
-    DISTINGUISHING_INGREDIENTS = [
-        'akkermansia', 'berberine', 'ashwagandha', 'collagen', 'magnesium',
-        'melatonin', 'biotin', 'turmeric', 'curcumin', 'coq10', 'quercetin',
-        'resveratrol', 'glutathione', 'liposomal',
-    ]
     def has_conflict(na, nb):
         wa = set(re.findall(r'\b\w+\b', na.lower()))
         wb = set(re.findall(r'\b\w+\b', nb.lower()))
@@ -196,10 +190,11 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             b_is_b = bool(wb & group_b)
             if (a_is_a and b_is_b) or (a_is_b and b_is_a):
                 return True
-        # 区分性成分：一个有而另一个没有，不合并
-        for ing in DISTINGUISHING_INGREDIENTS:
-            if (ing in wa) != (ing in wb):
-                return True
+        # GLP-1 capsule产品：用akkermansia/berberine区分
+        if 'glp' in wa and 'glp' in wb:
+            for ing in ('akkermansia', 'berberine'):
+                if (ing in wa) != (ing in wb):
+                    return True
         return False
 
     for i in range(len(rows)):
@@ -213,24 +208,16 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             if similarity(ni, nj, bi) >= 0.82:
                 parent[find(i)] = find(j)
 
-    # 取同组中最能区分产品的名称作为组名：
-    # 优先选包含区分性成分词的名称，有多个时选最长的；无成分词则选最长名称
-    KEY_INGREDIENTS = {'akkermansia', 'berberine', 'ashwagandha', 'collagen', 'magnesium',
-                       'melatonin', 'biotin', 'turmeric', 'curcumin', 'coq10', 'quercetin',
-                       'resveratrol', 'glutathione', 'liposomal', 'probiotics', 'probiotic'}
-    group_name_candidates: dict = {}
+    from collections import Counter
+    group_names: dict = {}
     gmap = {}
     for i, row in enumerate(rows):
         root = find(i)
         name = row['产品名称']
         if isinstance(name, str) and name.strip() not in ('-', ''):
-            group_name_candidates.setdefault(root, []).append(name)
+            group_names.setdefault(root, Counter())[name] += 1
         gmap[row['ASIN']] = root
-    def best_group_name(names):
-        names_with_key = [n for n in names if KEY_INGREDIENTS & set(re.findall(r'\b\w+\b', n.lower()))]
-        pool = names_with_key if names_with_key else names
-        return max(pool, key=len)
-    glabel = {root: best_group_name(names) for root, names in group_name_candidates.items()}
+    glabel = {root: cnt.most_common(1)[0][0] for root, cnt in group_names.items()}
     df['产品组ID'] = df['ASIN'].map(gmap)
     df['产品组名称'] = df['产品组ID'].map(glabel)
 
