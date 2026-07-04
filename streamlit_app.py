@@ -354,8 +354,7 @@ def render_results(df: pd.DataFrame, last_month: str, months: list, updated_at: 
 check_login()
 
 st.title("📊 Amazon Product Profit Decline Alert")
-st.caption(f"Logged in as **{st.session_state.get('username','')}** · "
-           f"[Logout](#logout \"Click logout below\")")
+st.caption(f"Logged in as **{st.session_state.get('username','')}** · Code: `{CACHE_VERSION}`")
 
 col_logout, col_clear = st.columns([1, 1])
 with col_logout:
