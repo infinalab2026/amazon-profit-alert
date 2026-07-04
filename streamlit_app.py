@@ -169,6 +169,10 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         ({'day', 'daytime'},        {'night', 'nighttime'}),
         ({'men', 'male'},           {'women', 'female'}),
         ({'kids', 'children'},      {'adult', 'adults'}),
+        ({'capsule', 'capsules'},   {'gummy', 'gummies'}),
+        ({'capsule', 'capsules'},   {'tablet', 'tablets'}),
+        ({'capsule', 'capsules'},   {'powder', 'drink', 'mix'}),
+        ({'gummy', 'gummies'},      {'powder', 'drink', 'mix'}),
     ]
     def has_conflict(na, nb):
         wa = set(re.findall(r'\b\w+\b', na.lower()))
