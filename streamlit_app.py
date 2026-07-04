@@ -165,15 +165,18 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         return x
     rows = asin_info.to_dict('records')
     # 对立词组：一个名字含左边的词、另一个含右边的词，则不合并
-    CONFLICT_PAIRS = [
-        ({'day', 'daytime'},        {'night', 'nighttime'}),
-        ({'men', 'male'},           {'women', 'female'}),
-        ({'kids', 'children'},      {'adult', 'adults'}),
-        ({'capsule', 'capsules'},   {'gummy', 'gummies'}),
-        ({'capsule', 'capsules'},   {'tablet', 'tablets'}),
-        ({'capsule', 'capsules'},   {'powder', 'drink', 'mix'}),
-        ({'gummy', 'gummies'},      {'powder', 'drink', 'mix'}),
+    FORMS = [
+        {'capsule', 'capsules'},
+        {'gummy', 'gummies'},
+        {'tablet', 'tablets'},
+        {'powder', 'drink', 'mix'},
+        {'drop', 'drops'},
     ]
+    CONFLICT_PAIRS = [
+        ({'day', 'daytime'},  {'night', 'nighttime'}),
+        ({'men', 'male'},     {'women', 'female'}),
+        ({'kids', 'children'}, {'adult', 'adults'}),
+    ] + [(FORMS[i], FORMS[j]) for i in range(len(FORMS)) for j in range(i+1, len(FORMS))]
     def has_conflict(na, nb):
         wa = set(re.findall(r'\b\w+\b', na.lower()))
         wb = set(re.findall(r'\b\w+\b', nb.lower()))
