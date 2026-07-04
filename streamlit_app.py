@@ -217,7 +217,18 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         if isinstance(name, str) and name.strip() not in ('-', ''):
             group_names.setdefault(root, Counter())[name] += 1
         gmap[row['ASIN']] = root
-    glabel = {root: cnt.most_common(1)[0][0] for root, cnt in group_names.items()}
+    GLP1_KEYS = ('akkermansia', 'berberine', 'acv')
+    def pick_group_name(cnt):
+        most_freq = cnt.most_common(1)[0][0]
+        # 对于GLP-1产品，优先选含区分成分词的名字
+        words = set(re.findall(r'\b\w+\b', most_freq.lower()))
+        if 'glp' in words and not any(k in words for k in GLP1_KEYS):
+            for name in cnt:
+                nw = set(re.findall(r'\b\w+\b', name.lower()))
+                if any(k in nw for k in GLP1_KEYS):
+                    return name
+        return most_freq
+    glabel = {root: pick_group_name(cnt) for root, cnt in group_names.items()}
     df['产品组ID'] = df['ASIN'].map(gmap)
     df['产品组名称'] = df['产品组ID'].map(glabel)
 
