@@ -55,7 +55,7 @@ def get_supabase():
     return create_client(url, key)
 
 
-CACHE_VERSION = "v16"  # 每次修改分析逻辑时递增，自动失效旧缓存
+CACHE_VERSION = "v17"  # 每次修改分析逻辑时递增，自动失效旧缓存
 
 
 def save_cache(df: pd.DataFrame, last_month: str, months: list):
@@ -241,19 +241,6 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
                     return name
         return most_freq
     glabel = {root: pick_group_name(cnt) for root, cnt in group_names.items()}
-    # DEBUG: show grouping for nighttime ASINs
-    idx_map = {r['ASIN']: i for i, r in enumerate(rows)}
-    debug_asins = ['B0FDK48M3G', 'B0GM1BRMLT']
-    debug_info = {}
-    for da in debug_asins:
-        if da in idx_map:
-            i = idx_map[da]
-            root = find(i)
-            group = [rows[k]['ASIN'] for k in range(len(rows)) if find(k)==root]
-            cn = clean_name(rows[i]['产品名称'], rows[i]['bc'])
-            debug_info[da] = {'root': root, 'group': group, 'cleaned': cn, 'bc': rows[i]['bc']}
-    import streamlit as _st
-    _st.write('DEBUG:', debug_info)
     df['产品组ID'] = df['ASIN'].map(gmap)
     df['产品组名称'] = df['产品组ID'].map(glabel)
 
@@ -289,7 +276,7 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
             'Decline ($)': round(best_p - last_p, 2),
             'Decline (%)': round(dpct, 1),
             'Brand': sub['brand'].iloc[0],
-            'ASINs': sub[sub['月份']==last_month]['asins'].iloc[0] if len(last_row) else sub['asins'].iloc[0],
+            'ASINs': ', '.join(sorted(set(', '.join(sub['asins']).split(', ')))),
             'Peak Profit ($)': round(best_p, 2),
             'Peak Month': best_m,
             **{m: round(mp.get(m, 0), 2) for m in complete},
