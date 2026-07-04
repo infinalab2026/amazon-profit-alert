@@ -108,7 +108,9 @@ def clean_name(name, brand=''):
 
 def clean_brand(b):
     if not isinstance(b, str) or b.strip() in ('-', ''): return ''
-    return b.split('，')[0].split(',')[0].strip().lower()
+    b = b.split('，')[0].split(',')[0].strip().lower()
+    b = re.sub(r'^lr\d+-', '', b).strip()
+    return b
 
 def similarity(a, b, brand=''):
     return SequenceMatcher(None, clean_name(a, brand), clean_name(b, brand)).ratio()
