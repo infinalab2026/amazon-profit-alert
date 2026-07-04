@@ -171,6 +171,8 @@ def run_analysis(file_bytes, filename, threshold, decline_ratio):
         {'tablet', 'tablets'},
         {'powder', 'drink', 'mix'},
         {'drop', 'drops'},
+        {'patch', 'patches'},
+        {'cream', 'creams'},
     ]
     CONFLICT_PAIRS = [
         ({'day', 'daytime'},  {'night', 'nighttime'}),
