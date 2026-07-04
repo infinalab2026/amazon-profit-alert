@@ -55,7 +55,7 @@ def get_supabase():
     return create_client(url, key)
 
 
-CACHE_VERSION = "v15"  # 每次修改分析逻辑时递增，自动失效旧缓存
+CACHE_VERSION = "v16"  # 每次修改分析逻辑时递增，自动失效旧缓存
 
 
 def save_cache(df: pd.DataFrame, last_month: str, months: list):
